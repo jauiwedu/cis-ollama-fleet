@@ -61,5 +61,26 @@
     "params_b": 70,
     "vram_gb_min": 40,
     "notes": "Only worth benchmarking on a 48GB+ card. Best reasoning in this list if the hardware supports it."
+  },
+  {
+    "family": "gemma3-abliterated",
+    "ollama_tag": "huihui_ai/gemma3-abliterated:4b",
+    "params_b": 4,
+    "vram_gb_min": 10,
+    "notes": "Abliterated (refusal-direction ablated, not fine-tuned) Gemma 3 4B — 2026's most-cited low-refusal pick for 16GB-class cards, and vision-capable. Popularity source: 2026 uncensored-LLM roundups."
+  },
+  {
+    "family": "gemma-2-9b-it-abliterated",
+    "ollama_tag": "richardyoung/gemma-2-9b-it-abliterated:Q4_K_M",
+    "params_b": 9,
+    "vram_gb_min": 8,
+    "notes": "Heretic-library abliteration of Gemma 2 9B IT — reported ~100% compliance while keeping MMLU close to base. Compare against the gemma3-abliterated:4b pick."
+  },
+  {
+    "family": "qwen3",
+    "ollama_tag": "qwen3:14b",
+    "params_b": 14,
+    "vram_gb_min": 11,
+    "notes": "Not tuned for low refusal, but one of the most-pulled 2026 general models at this size — kept in the mix as a capability baseline per the README's 'capability matters too' philosophy."
   }
 ]
