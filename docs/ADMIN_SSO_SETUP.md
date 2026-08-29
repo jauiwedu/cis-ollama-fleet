@@ -21,17 +21,41 @@ staff/workstudy browser
    LiteLLM Proxy UI  →  user clicks "Create Key"  →  sk-... API key
 ```
 
-You will need from IT before starting:
-- **LDAP server address** for the AD domain (e.g. `ldap://dc01.cis.lab:389`
-  or `ldaps://...:636` if LDAPS is required — ask which).
-- **Bind account** — a low-privilege AD service account Keycloak uses to
-  search AD (read-only; it never needs to write). `sAMAccountName` + password.
-- **User search base DN**, e.g. `OU=Users,DC=cis,DC=lab`.
-- **Exact group names/DNs** for Workstudy, Faculty, and Professors in AD
-  (e.g. `CN=Workstudy,OU=Groups,DC=cis,DC=lab`) — get these from IT rather
-  than guessing; a typo here silently means "nobody can log in."
+Confirmed directly against the domain controller (`cis-windows.cis.lab`,
+`192.168.128.11`), domain `cis.lab`:
 
-Everything below assumes the placeholders above — swap in your real values.
+- **LDAP server address**: `cis-windows.cis.lab` (`192.168.128.11`). Plain
+  LDAP is `ldap://cis-windows.cis.lab:389`. **LDAPS (636) vs. plain 389 has
+  not been confirmed** — ask IT whether the DC has a valid cert for LDAPS
+  before assuming 389 is acceptable for production; sending AD bind
+  credentials over plain LDAP on an untrusted segment is a real risk.
+- **User search base DN**: `OU=Users,OU=CIS Lab,DC=cis,DC=lab` (contains
+  per-role sub-OUs `Students`, `Faculty`, `Professors`, `Workstudies`).
+- **Exact group names/DNs** for the three groups this fleet gates on:
+  - Workstudy → `CIS Workstudies` —
+    `CN=CIS Workstudies,OU=Users,OU=CIS Lab,DC=cis,DC=lab`
+  - Faculty → `CIS Faculty` —
+    `CN=CIS Faculty,OU=Users,OU=CIS Lab,DC=cis,DC=lab`
+  - Professors → `CIS Professors` —
+    `CN=CIS Professors,OU=Users,OU=CIS Lab,DC=cis,DC=lab`
+
+  (Note the real group names carry the "CIS " prefix and, for Workstudy, an
+  "-ies" plural — don't type `Workstudy`/`Faculty`/`Professors` bare into
+  Keycloak's group mapper, use the exact `CIS ...` names above.)
+
+**Still missing — not yet obtained:**
+- **Bind account** — a low-privilege, read-only AD service account for
+  Keycloak to search AD with. No existing "svc-ldap"/"svc-keycloak"-style
+  account was found; one will likely need to be created in AD (e.g. under
+  `OU=Users,OU=CIS Lab,DC=cis,DC=lab` or a dedicated service-accounts OU) —
+  that's an AD write action, so have IT create it rather than doing it ad
+  hoc: `sAMAccountName`, password, and read access to
+  `OU=Users,OU=CIS Lab,DC=cis,DC=lab` is all it needs. It should **not** be
+  a domain admin account.
+- **LDAPS confirmation** (see above).
+
+Everything below uses the confirmed values; swap in the bind account once
+IT provisions it.
 
 ## 1. Bring up the stack
 
@@ -59,10 +83,10 @@ Stay inside this realm for every step below.
 | Field | Value |
 |---|---|
 | Vendor | Active Directory |
-| Connection URL | `ldap://<your DC address>:389` (or `ldaps://...:636`) |
-| Bind DN | the service account's full DN |
+| Connection URL | `ldap://cis-windows.cis.lab:389` (confirm LDAPS with IT first — see note above) |
+| Bind DN | the service account's full DN (not yet provisioned — see above) |
 | Bind credential | its password |
-| Users DN | your user search base DN |
+| Users DN | `OU=Users,OU=CIS Lab,DC=cis,DC=lab` |
 | Username LDAP attribute | `sAMAccountName` |
 | RDN LDAP attribute | `cn` |
 | UUID LDAP attribute | `objectGUID` |
@@ -80,16 +104,18 @@ On the LDAP provider you just made → **Mappers** tab → **Add mapper**:
 
 - Name: `ad-groups`
 - Mapper type: `group-ldap-mapper`
-- LDAP Groups DN: the OU that contains Workstudy/Faculty/Professors
-  (e.g. `OU=Groups,DC=cis,DC=lab`)
+- LDAP Groups DN: `OU=Users,OU=CIS Lab,DC=cis,DC=lab` (the groups
+  `CIS Workstudies`/`CIS Faculty`/`CIS Professors` live directly in this OU,
+  same as the users)
 - Group Name LDAP Attribute: `cn`
 - Membership LDAP Attribute: `member`
 - Mode: `READ_ONLY` (Keycloak should never write back to AD)
 
 Save, then trigger a sync from this mapper's page. Under **Groups** (left
-nav) you should now see `Workstudy`, `Faculty`, `Professors` (or your real
-group names) as top-level Keycloak groups, each populated with the AD
-members.
+nav) you should now see `CIS Workstudies`, `CIS Faculty`, `CIS Professors`
+(along with `CIS Students`, `CIS Capstone`, etc. — everything else in that
+OU syncs too, that's expected) as top-level Keycloak groups, each populated
+with the AD members.
 
 ## 5. Create one "fleet access" role and grant it to those three groups only
 
@@ -97,8 +123,10 @@ This is the actual gate — everything above just makes AD data visible to
 Keycloak, it doesn't restrict anything yet.
 
 1. **Realm roles** → **Create role** → name `fleet-access` → Save.
-2. **Groups** → open `Workstudy` → **Role mapping** → **Assign role** →
-   pick `fleet-access`. Repeat for `Faculty` and `Professors`.
+2. **Groups** → open `CIS Workstudies` → **Role mapping** → **Assign role**
+   → pick `fleet-access`. Repeat for `CIS Faculty` and `CIS Professors`.
+   (Leave `CIS Students`, `CIS Capstone`, and everything else unassigned —
+   they synced from AD too but should not get `fleet-access`.)
 
 Anyone in AD but *not* in one of those three groups will not carry
 `fleet-access`, even though they can technically authenticate against AD.
@@ -174,19 +202,20 @@ curl -X POST $PROXY_BASE_URL/team/new \
   -H "Content-Type: application/json" \
   -d '{
         "team_alias": "fleet-users",
-        "team_id": "Workstudy",
+        "team_id": "CIS Workstudies",
         "models": ["general-agent"],
         "max_budget": 20,
         "budget_duration": "30d"
       }'
 ```
 
-`team_id` here should match the Keycloak group name coming through in the
-`groups` claim (`Workstudy`, `Faculty`, `Professors`) — that's what
-`team_ids_jwt_field: "groups"` matches against to auto-add a logging-in
-user to the right team. Repeat for `Faculty` and `Professors` (same
-`models`, or different budgets/model lists per group if you want staff and
-workstudy on different limits).
+`team_id` here must match the Keycloak group name coming through in the
+`groups` claim exactly — i.e. `CIS Workstudies`, `CIS Faculty`,
+`CIS Professors` (with the "CIS " prefix, not the short names) — that's
+what `team_ids_jwt_field: "groups"` matches against to auto-add a
+logging-in user to the right team. Repeat for `CIS Faculty` and
+`CIS Professors` (same `models`, or different budgets/model lists per group
+if you want staff and workstudy on different limits).
 
 From here, hand people [docs/USING_THE_FLEET.md](USING_THE_FLEET.md) — that's
 the part they actually need.
