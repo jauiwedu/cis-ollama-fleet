@@ -17,7 +17,7 @@ quant.
    whichever is representative of the group (or the one most people will
    actually be sitting at).
 2. **Detect its GPU + VRAM** — [`benchmark/Get-GpuInfo.ps1`](benchmark/Get-GpuInfo.ps1)
-   (Windows lab machines) or [`benchmark/gpu_info.sh`](benchmark/gpu_info.sh)
+   (Windows lab machines) or [`benchmark/gpu_info.py`](benchmark/gpu_info.py)
    (Linux, if any candidate runs it).
 3. **Run the benchmark** — [`benchmark/run_benchmark.py`](benchmark/run_benchmark.py)
    pulls each candidate model that plausibly fits the detected VRAM, runs the
@@ -40,6 +40,16 @@ they're known to have a light refusal posture out of the box, not because
 they're the most capable model at that size. Capability still matters, which
 is exactly what the benchmark's refusal-check prompts are for: a model that's
 fast and permissive but useless at the actual task doesn't get picked either.
+
+## Serving the fleet behind one API key
+
+Once a few PCs are benchmarked, [`orchestrator/`](orchestrator/) stands up a
+[LiteLLM Proxy](https://github.com/BerriAI/litellm) gateway in front of them
+— one URL, OpenAI- and Anthropic-compatible, with a separate virtual API key
+per person (student, professor, you) so everyone shares the fleet without
+sharing credentials or seeing each other's usage. See
+[`orchestrator/README.md`](orchestrator/README.md) for deployment and how to
+point Claude Code or any OpenAI-style client at it.
 
 ## Why this matters here specifically
 
@@ -68,4 +78,9 @@ results/
 scripts/
   recommend.py           `python recommend.py --vram-gb 12` -> which candidates fit
   leaderboard.py          prints a combined table across every results/*.json
+orchestrator/
+  litellm_config.yaml     routes (coding-agent, text-agent, ...) -> (PC, model)
+  docker-compose.yml      LiteLLM proxy + Postgres for key/usage tracking
+  generate_config.py      regenerates model_list from results/ once benchmarked
+  README.md               deploy steps, issuing per-user keys, client setup
 ```
