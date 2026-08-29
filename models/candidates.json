@@ -1,0 +1,65 @@
+[
+  {
+    "family": "llama2-uncensored",
+    "ollama_tag": "llama2-uncensored:7b",
+    "params_b": 7,
+    "vram_gb_min": 6,
+    "notes": "Small, cheap fallback for tight-VRAM machines. Weaker reasoning than newer 7-8B models — benchmark it, don't assume it wins its tier."
+  },
+  {
+    "family": "wizard-vicuna-uncensored",
+    "ollama_tag": "wizard-vicuna-uncensored:7b",
+    "params_b": 7,
+    "vram_gb_min": 6,
+    "notes": "Older but consistently light on refusals. Good baseline to compare newer models against."
+  },
+  {
+    "family": "wizard-vicuna-uncensored",
+    "ollama_tag": "wizard-vicuna-uncensored:13b",
+    "params_b": 13,
+    "vram_gb_min": 10,
+    "notes": "13B step up if a PC has the VRAM for it."
+  },
+  {
+    "family": "dolphin-llama3",
+    "ollama_tag": "dolphin-llama3:8b",
+    "params_b": 8,
+    "vram_gb_min": 6,
+    "notes": "Cognitive Computations' Dolphin fine-tune of Llama 3 — explicitly tuned to be compliant/uncensored while keeping Llama 3's reasoning. Strong default pick for 8GB-class cards."
+  },
+  {
+    "family": "dolphin3",
+    "ollama_tag": "dolphin3:8b",
+    "params_b": 8,
+    "vram_gb_min": 6,
+    "notes": "Newer Dolphin generation (Llama 3.1 base). Benchmark against dolphin-llama3:8b — whichever wins on this hardware becomes the 8GB-tier default."
+  },
+  {
+    "family": "openhermes",
+    "ollama_tag": "openhermes:7b",
+    "params_b": 7,
+    "vram_gb_min": 6,
+    "notes": "Lighter guardrails than base Llama/Mistral instruct models, strong general capability. Worth having in the mix even if it's not the least-refusal option — capability matters too."
+  },
+  {
+    "family": "nous-hermes2-mixtral",
+    "ollama_tag": "nous-hermes2-mixtral:8x7b",
+    "params_b": 47,
+    "vram_gb_min": 26,
+    "notes": "Mixtral MoE — only ~13B active params per token so it's faster than the param count suggests, but full weights still have to fit in VRAM. 24GB cards will likely need a lower quant (see notes below)."
+  },
+  {
+    "family": "dolphin-mixtral",
+    "ollama_tag": "dolphin-mixtral:8x7b",
+    "params_b": 47,
+    "vram_gb_min": 26,
+    "notes": "Dolphin fine-tune of Mixtral — the strongest low-refusal option in this list if the hardware has 24GB+ VRAM. Same VRAM caveat as nous-hermes2-mixtral."
+  },
+  {
+    "family": "dolphin-llama3",
+    "ollama_tag": "dolphin-llama3:70b",
+    "params_b": 70,
+    "vram_gb_min": 40,
+    "notes": "Only worth benchmarking on a 48GB+ card. Best reasoning in this list if the hardware supports it."
+  }
+]
