@@ -102,18 +102,27 @@ def main() -> None:
     RESULTS_DIR.mkdir(exist_ok=True)
     out_path = RESULTS_DIR / f"{socket.gethostname()}.json"
 
-    results = []
+    # merge into any existing results for this host rather than clobbering
+    # them — a rerun with a different --models subset shouldn't erase prior runs
+    by_tag = {}
+    if out_path.exists():
+        for run in json.loads(out_path.read_text()).get("runs", []):
+            by_tag[run["tag"]] = run
+
+    def _flush() -> None:
+        out_path.write_text(json.dumps({"hostname": socket.gethostname(), "runs": list(by_tag.values())}, indent=2))
+
     for tag in tags:
         if args.pull:
             try:
                 pull_model(args.base_url, tag)
             except Exception as exc:  # noqa: BLE001 — record and keep going
                 print(f"  pull failed for {tag}: {exc}", file=sys.stderr)
-                results.append({"tag": tag, "error": f"pull failed: {exc}"})
-                out_path.write_text(json.dumps({"hostname": socket.gethostname(), "runs": results}, indent=2))
+                by_tag[tag] = {"tag": tag, "error": f"pull failed: {exc}"}
+                _flush()
                 continue
-        results.append(benchmark_model(args.base_url, tag, prompts))
-        out_path.write_text(json.dumps({"hostname": socket.gethostname(), "runs": results}, indent=2))
+        by_tag[tag] = benchmark_model(args.base_url, tag, prompts)
+        _flush()
 
     print(f"wrote {out_path}", file=sys.stderr)
 
