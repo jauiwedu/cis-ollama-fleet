@@ -1,79 +1,65 @@
 [
   {
-    "family": "llama2-uncensored",
-    "ollama_tag": "llama2-uncensored:7b",
-    "params_b": 7,
-    "vram_gb_min": 6,
-    "notes": "Small, cheap fallback for tight-VRAM machines. Weaker reasoning than newer 7-8B models — benchmark it, don't assume it wins its tier."
-  },
-  {
-    "family": "wizard-vicuna-uncensored",
-    "ollama_tag": "wizard-vicuna-uncensored:7b",
-    "params_b": 7,
-    "vram_gb_min": 6,
-    "notes": "Older but consistently light on refusals. Good baseline to compare newer models against."
-  },
-  {
-    "family": "wizard-vicuna-uncensored",
-    "ollama_tag": "wizard-vicuna-uncensored:13b",
-    "params_b": 13,
-    "vram_gb_min": 10,
-    "notes": "13B step up if a PC has the VRAM for it."
-  },
-  {
     "family": "dolphin-llama3",
     "ollama_tag": "dolphin-llama3:8b",
     "params_b": 8,
     "vram_gb_min": 6,
-    "notes": "Cognitive Computations' Dolphin fine-tune of Llama 3 — explicitly tuned to be compliant/uncensored while keeping Llama 3's reasoning. Strong default pick for 8GB-class cards."
+    "notes": "Cognitive Computations' Dolphin fine-tune of Llama 3 — explicitly tuned to be compliant/uncensored while keeping Llama 3's reasoning. Already benchmarked on G014-10 (74.7 tok/s, 0/3 refusals)."
   },
   {
     "family": "dolphin3",
     "ollama_tag": "dolphin3:8b",
     "params_b": 8,
     "vram_gb_min": 6,
-    "notes": "Newer Dolphin generation (Llama 3.1 base). Benchmark against dolphin-llama3:8b — whichever wins on this hardware becomes the 8GB-tier default."
-  },
-  {
-    "family": "openhermes",
-    "ollama_tag": "openhermes:v2.5",
-    "params_b": 7,
-    "vram_gb_min": 6,
-    "notes": "Lighter guardrails than base Llama/Mistral instruct models, strong general capability. Worth having in the mix even if it's not the least-refusal option — capability matters too."
-  },
-  {
-    "family": "nous-hermes2-mixtral",
-    "ollama_tag": "nous-hermes2-mixtral:8x7b",
-    "params_b": 47,
-    "vram_gb_min": 26,
-    "notes": "Mixtral MoE — only ~13B active params per token so it's faster than the param count suggests, but full weights still have to fit in VRAM. 24GB cards will likely need a lower quant (see notes below)."
-  },
-  {
-    "family": "dolphin-mixtral",
-    "ollama_tag": "dolphin-mixtral:8x7b",
-    "params_b": 47,
-    "vram_gb_min": 26,
-    "notes": "Dolphin fine-tune of Mixtral — the strongest low-refusal option in this list if the hardware has 24GB+ VRAM. Same VRAM caveat as nous-hermes2-mixtral."
-  },
-  {
-    "family": "dolphin-llama3",
-    "ollama_tag": "dolphin-llama3:70b",
-    "params_b": 70,
-    "vram_gb_min": 40,
-    "notes": "Only worth benchmarking on a 48GB+ card. Best reasoning in this list if the hardware supports it."
+    "notes": "Newer Dolphin generation (Llama 3.1 base). Already benchmarked on G014-10 (69.8 tok/s, 0/3 refusals)."
   },
   {
     "family": "gemma-2-9b-it-abliterated",
     "ollama_tag": "richardyoung/gemma-2-9b-it-abliterated:Q4_K_M",
     "params_b": 9,
     "vram_gb_min": 8,
-    "notes": "Heretic-library abliteration of Gemma 2 9B IT — reported ~100% compliance while keeping MMLU close to base. Compare against the gemma3-abliterated:4b pick."
+    "notes": "Heretic-library abliteration of Gemma 2 9B IT. Already benchmarked on G014-10 (53.7 tok/s, 0/3 refusals)."
   },
   {
-    "family": "qwen3",
-    "ollama_tag": "qwen3:14b",
-    "params_b": 14,
+    "family": "phi4-mini-abliterated",
+    "ollama_tag": "huihui_ai/phi4-mini-abliterated:latest",
+    "params_b": 3.8,
+    "vram_gb_min": 4,
+    "notes": "Requested by Dr. Parra (2026-08-29). Abliterated Phi-4 Mini — smallest/cheapest candidate here, good fit for low-VRAM lab machines. Verified tag+size on ollama.com before adding (2.5GB, latest == 3.8b)."
+  },
+  {
+    "family": "qwythos-9b-abliterated",
+    "ollama_tag": "richardyoung/qwythos-9b-abliterated:Q8_0",
+    "params_b": 9,
     "vram_gb_min": 11,
-    "notes": "Not tuned for low refusal, but one of the most-pulled 2026 general models at this size — kept in the mix as a capability baseline per the README's 'capability matters too' philosophy."
+    "notes": "Requested by Dr. Parra (2026-08-29). Heretic-abliterated Qwen3.5-9B-based reasoning/creative model, 1M-token context (YaRN). Q8_0 quant, ~9.5GB download."
+  },
+  {
+    "family": "qwen3-abliterated",
+    "ollama_tag": "huihui_ai/qwen3-abliterated:16b",
+    "params_b": 16,
+    "vram_gb_min": 11,
+    "notes": "Requested by Dr. Parra (2026-08-29). Abliterated Qwen3 16B, 9.8GB download. Verify the plain '16b' tag pulls cleanly — sibling tags on this repo (e.g. 16b-a3b) exist too, don't mix them up."
+  },
+  {
+    "family": "qwen3.6",
+    "ollama_tag": "qwen3.6:27b",
+    "params_b": 27,
+    "vram_gb_min": 20,
+    "notes": "Requested by Dr. Parra (2026-08-29). Official Qwen3.6 27B, 18GB download, 256K context, text+image. Not low-refusal-tuned — capability baseline only. Won't fit G014-10's 16GB card; needs a 24GB+ box."
+  },
+  {
+    "family": "gemma4",
+    "ollama_tag": "gemma4:26b",
+    "params_b": 26,
+    "vram_gb_min": 22,
+    "notes": "Requested by Dr. Parra (2026-08-29). Official Gemma 4 26B-A4B MoE (26B total, ~4B active/token), 19GB download at default quant. Not low-refusal-tuned. Won't fit G014-10's 16GB card; needs a 24GB+ box."
+  },
+  {
+    "family": "gemma-3-27b-it-abliterated",
+    "ollama_tag": "aqualaguna/gemma-3-27b-it-abliterated-GGUF:q4_k_m",
+    "params_b": 27,
+    "vram_gb_min": 19,
+    "notes": "Requested by Dr. Parra (2026-08-29). Community abliteration of Gemma 3 27B IT (mlabonne's HF model, repackaged as GGUF), q4_k_m at 17GB. Won't fit G014-10's 16GB card; needs a 20GB+ box."
   }
 ]
