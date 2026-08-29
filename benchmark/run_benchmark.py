@@ -99,15 +99,22 @@ def main() -> None:
         print("no candidates matched — check models/candidates.json", file=sys.stderr)
         sys.exit(1)
 
+    RESULTS_DIR.mkdir(exist_ok=True)
+    out_path = RESULTS_DIR / f"{socket.gethostname()}.json"
+
     results = []
     for tag in tags:
         if args.pull:
-            pull_model(args.base_url, tag)
+            try:
+                pull_model(args.base_url, tag)
+            except Exception as exc:  # noqa: BLE001 — record and keep going
+                print(f"  pull failed for {tag}: {exc}", file=sys.stderr)
+                results.append({"tag": tag, "error": f"pull failed: {exc}"})
+                out_path.write_text(json.dumps({"hostname": socket.gethostname(), "runs": results}, indent=2))
+                continue
         results.append(benchmark_model(args.base_url, tag, prompts))
+        out_path.write_text(json.dumps({"hostname": socket.gethostname(), "runs": results}, indent=2))
 
-    RESULTS_DIR.mkdir(exist_ok=True)
-    out_path = RESULTS_DIR / f"{socket.gethostname()}.json"
-    out_path.write_text(json.dumps({"hostname": socket.gethostname(), "runs": results}, indent=2))
     print(f"wrote {out_path}", file=sys.stderr)
 
 

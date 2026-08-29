@@ -36,7 +36,7 @@
   },
   {
     "family": "openhermes",
-    "ollama_tag": "openhermes:7b",
+    "ollama_tag": "openhermes:v2.5",
     "params_b": 7,
     "vram_gb_min": 6,
     "notes": "Lighter guardrails than base Llama/Mistral instruct models, strong general capability. Worth having in the mix even if it's not the least-refusal option — capability matters too."
