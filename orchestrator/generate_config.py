@@ -30,7 +30,9 @@ def _looks_refused(text: str) -> bool:
 
 
 def _host_base_url(hostname: str) -> str:
-    return f"http://{hostname}.lab.uiw.edu:11434"
+    # cis.lab is the confirmed-resolving domain for lab PCs (verified via DNS
+    # lookup against G014-10) — lab.uiw.edu never resolved and was a guess.
+    return f"http://{hostname}.cis.lab:11434"
 
 
 def main() -> None:

@@ -13,32 +13,34 @@
 # docstring.
 
 model_list:
-  # --- g014-01 : test benchmark PC -----------------------------------------
-  # Placeholder tag — swap for whatever scripts/leaderboard.py says actually
-  # won on this box once it's been benchmarked.
-  - model_name: coding-agent
+  # --- G014-10 : RTX A4000, 16GB — benchmarked 2026-08-29, 12 candidates ----
+  # Winner per orchestrator/generate_config.py (fastest clean, 0/3 refusals):
+  # huihui_ai/phi4-mini-abliterated:latest, 112.1 tok/s. Full results in
+  # results/G014-10.json. Exposed under two route names — same backend model,
+  # "general-agent" is just the friendlier name for end users/the usage guide.
+  - model_name: phi4-mini-abliterated-agent
     litellm_params:
-      model: ollama/dolphin-llama3:8b
-      api_base: http://g014-01.lab.uiw.edu:11434
+      model: ollama/huihui_ai/phi4-mini-abliterated:latest
+      api_base: http://G014-10.cis.lab:11434
     model_info:
-      host: g014-01
-      role: coding
+      host: G014-10
+      role: phi4-mini-abliterated
 
-  - model_name: text-agent
+  - model_name: general-agent
     litellm_params:
-      model: ollama/dolphin3:8b
-      api_base: http://g014-01.lab.uiw.edu:11434
+      model: ollama/huihui_ai/phi4-mini-abliterated:latest
+      api_base: http://G014-10.cis.lab:11434
     model_info:
-      host: g014-01
-      role: text
+      host: G014-10
+      role: general
 
   # --- add more PCs as they come online, same pattern ----------------------
   # - model_name: coding-agent
   #   litellm_params:
   #     model: ollama/<tag>
-  #     api_base: http://g014-02.lab.uiw.edu:11434
+  #     api_base: http://g014-XX.cis.lab:11434
   #   model_info:
-  #     host: g014-02
+  #     host: g014-XX
   #     role: coding
 
 router_settings:
@@ -51,6 +53,19 @@ general_settings:
   database_url: os.environ/DATABASE_URL   # per-user virtual keys + usage tracking live here
   # Every virtual key is capped to these routes only, plus a budget — see
   # README.md "Issuing per-user keys" for the actual /key/generate calls.
+
+  # --- AD-gated SSO login (see docs/ADMIN_SSO_SETUP.md) ---------------------
+  # Actual SSO wiring (client id/secret, IdP endpoints) is env-var based and
+  # lives in orchestrator/.env — see GENERIC_CLIENT_ID etc. in .env.example.
+  # This maps the "groups" claim Keycloak puts in the token (synced from the
+  # AD Workstudy/Faculty/Professors groups) onto LiteLLM teams, so someone
+  # outside those AD groups can log in to Keycloak but LiteLLM still won't
+  # hand them a team/key.
+  litellm_jwtauth:
+    team_ids_jwt_field: "groups"
+  default_internal_user_params:
+    user_role: internal_user     # can self-serve /key/generate, nothing admin
+    models: ["no-default-models"]  # must belong to an allowed team to get model access
 
 litellm_settings:
   drop_params: true   # tolerate clients sending params a given Ollama model doesn't support

@@ -14,14 +14,53 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+      - keycloak
     ports:
       - "4000:4000"
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       DATABASE_URL: postgresql://litellm:${POSTGRES_PASSWORD}@db:5432/litellm
+      # --- SSO login, gated to AD Workstudy/Faculty/Professors groups via
+      # Keycloak — see docs/ADMIN_SSO_SETUP.md for the one-time Keycloak setup.
+      PROXY_BASE_URL: ${PROXY_BASE_URL}
+      GENERIC_CLIENT_ID: ${GENERIC_CLIENT_ID}
+      GENERIC_CLIENT_SECRET: ${GENERIC_CLIENT_SECRET}
+      GENERIC_AUTHORIZATION_ENDPOINT: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/auth
+      GENERIC_TOKEN_ENDPOINT: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+      GENERIC_USERINFO_ENDPOINT: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/userinfo
+      GENERIC_USER_ID_ATTRIBUTE: sub
+      GENERIC_USER_EMAIL_ATTRIBUTE: email
+      GENERIC_USER_DISPLAY_NAME_ATTRIBUTE: name
     volumes:
       - ./litellm_config.yaml:/app/config.yaml
     command: ["--config", "/app/config.yaml", "--port", "4000"]
 
+  keycloak-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      POSTGRES_DB: keycloak
+    volumes:
+      - keycloak_pg:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    restart: unless-stopped
+    command: ["start", "--hostname-strict=false", "--proxy-headers=xforwarded"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    ports:
+      - "8080:8080"   # Keycloak admin console — see docs/ADMIN_SSO_SETUP.md
+    depends_on:
+      - keycloak-db
+
 volumes:
   litellm_pg:
+  keycloak_pg:

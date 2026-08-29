@@ -13,16 +13,25 @@ with virtual per-user keys, budgets, and routing baked in.
 ## How it fits together
 
 ```
-student / prof / you
-        │  (their own virtual API key)
+workstudy / faculty / professor
+        │  logs in with AD username+password
         ▼
-  LiteLLM Proxy  ── reads litellm_config.yaml ──►  coding-agent  → g014-01:11434 (dolphin-llama3:8b)
-  (one URL,                                        text-agent    → g014-01:11434 (dolphin3:8b)
-   port 4000)                                       vision-agent  → g014-02:11434 (llava:13b)
-        │                                            ...more PCs as they're benchmarked
+  Keycloak  ── LDAP bind to AD, checks Workstudy/Faculty/Professors group
+        │  OIDC login (groups claim)
+        ▼
+  LiteLLM Proxy  ── reads litellm_config.yaml ──►  general-agent → G014-10.cis.lab:11434
+  (one URL,                                                        (phi4-mini-abliterated)
+   port 4000)                                       ...more PCs as they're benchmarked
+        │
         ▼
   Postgres (keys, budgets, usage — not model weights)
 ```
+
+AD-gated SSO login is the primary way people get a key now — see
+[docs/ADMIN_SSO_SETUP.md](../docs/ADMIN_SSO_SETUP.md) (one-time Keycloak/AD
+setup) and [docs/USING_THE_FLEET.md](../docs/USING_THE_FLEET.md) (what to
+hand end users). The manual `/key/generate` flow below still works for
+one-off keys outside AD (e.g. a service account).
 
 Callers never see individual PC hostnames or IPs — they ask for a *route*
 (`coding-agent`, `text-agent`, ...) and LiteLLM picks a healthy backend
@@ -106,14 +115,19 @@ other model name.
 ## Notes / honest gaps
 
 - **Not yet deployed.** This is the config/compose scaffold only — nobody
-  has run `docker compose up` against a real gateway host yet, and
-  `litellm_config.yaml`'s single G014-01 entry is a placeholder pointing at
-  a model tag that hasn't been benchmark-confirmed as the winner for that
-  box. Treat every hostname/tag in this file as "to be replaced."
-- **`g014-01.lab.uiw.edu` is a guessed hostname pattern**, not a confirmed
-  one — swap in whatever the lab PCs actually resolve as (or hardcode IPs)
-  before deploying.
-- **CORS/network exposure**: this gateway will be reachable by anyone on
-  whatever network segment it's bound to. Bind it to the lab's internal
-  network only, not a public interface, unless you've thought through
-  exposing it further.
+  has run `docker compose up` against a real gateway host yet.
+  `litellm_config.yaml`'s `general-agent`/`phi4-mini-abliterated-agent`
+  entries point at G014-10's actual benchmark winner
+  (`huihui_ai/phi4-mini-abliterated:latest`, 112.1 tok/s, 0/3 refusals — see
+  `results/G014-10.json`), reachable at `G014-10.cis.lab:11434` (confirmed
+  via DNS lookup, not guessed).
+- **Keycloak/AD wiring needs real values from IT** before it'll work —
+  LDAP server address, bind account, search base DN, and the exact AD group
+  names for Workstudy/Faculty/Professors. See
+  [docs/ADMIN_SSO_SETUP.md](../docs/ADMIN_SSO_SETUP.md) step 0 for the full
+  list. Every placeholder in that doc needs swapping before `docker compose
+  up` will produce a working login.
+- **CORS/network exposure**: this gateway (and Keycloak's admin console on
+  :8080) will be reachable by anyone on whatever network segment it's bound
+  to. Bind it to the lab's internal network only, not a public interface,
+  unless you've thought through exposing it further.
